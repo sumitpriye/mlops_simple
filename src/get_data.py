@@ -1,8 +1,7 @@
-## read params
-## process it
-## return data frame
+# read params
+# process it
+# return data frame
 
-import os
 import yaml
 import pandas as pd
 import argparse
