@@ -14,11 +14,13 @@ import argparse
 import joblib
 import json
 
+
 def eval_metrics(actual, pred):
     rmse = np.sqrt(mean_squared_error(actual, pred))
     mae = mean_absolute_error(actual, pred)
     r2 = r2_score(actual, pred)
-    return rmse,mae,r2
+    return rmse, mae, r2
+
 
 def train_and_evaluate(config_path):
     config = read_params(config_path)
@@ -30,7 +32,7 @@ def train_and_evaluate(config_path):
     l1_ratio = config["estimators"]["ElasticNet"]["params"]["l1_ratio"]
     target = [config["base"]["target_col"]]
 
-    train = pd.read_csv(train_data_path, sep =",")
+    train = pd.read_csv(train_data_path, sep=",")
     test = pd.read_csv(test_data_path, sep=",")
 
     train_y = train[target]
@@ -40,7 +42,7 @@ def train_and_evaluate(config_path):
     test_x = test.drop(target, axis=1)
 
     lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=random_state)
-    lr.fit(train_x,train_y)
+    lr.fit(train_x, train_y)
 
     predicted_qualities = lr.predict(test_x)
     (rmse, mae, r2) = eval_metrics(test_y, predicted_qualities)
@@ -48,6 +50,28 @@ def train_and_evaluate(config_path):
     print("  RMSE: %s" % rmse)
     print("  MAE: %s" % mae)
     print("  R2: %s" % r2)
+
+    scores_file = config["reports"]["scores"]
+    params_file = config["reports"]["params"]
+    with open(scores_file, "w") as f:
+        scores = {
+            "rmse": rmse,
+            "mae": mae,
+            "r2": r2
+        }
+        json.dump(scores, f, indent=4)
+
+    with open(params_file, "w") as f:
+        params = {
+            "alpha": alpha,
+            "l1_ratio": l1_ratio,
+        }
+        json.dump(params, f, indent=4)
+
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, "model.joblib")
+
+    joblib.dump(lr, model_path)
 
 
 if __name__ == "__main__":
